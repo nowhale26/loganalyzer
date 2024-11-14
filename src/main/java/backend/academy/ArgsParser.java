@@ -2,7 +2,6 @@ package backend.academy;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ArgsParser {
@@ -20,7 +19,7 @@ public class ArgsParser {
         return argsMap;
     }
 
-    private void initializeParametrs() {
+    private void initializeArguments() {
         from = arguments.containsKey("from") ? LocalDateTime.parse(arguments.get("from")) : null;
         to = arguments.containsKey("to") ? LocalDateTime.parse(arguments.get("to")) : null;
         if (arguments.containsKey("path")) {
