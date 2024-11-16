@@ -1,5 +1,6 @@
 package backend.academy;
 
+import lombok.Getter;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -12,17 +13,22 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Getter
 public class LogAnalyzer {
     private int requestCounter = 0;
     private Map<String, Integer> mostResources;
     private Map<String, Integer> mostCodeResponses;
     private double averageSize = 0;
+    private int percentile95;
 
     private static BufferedReader createReader(String path) throws IOException {
         if (path.startsWith("https://") || path.startsWith("http://")) {
@@ -33,9 +39,10 @@ public class LogAnalyzer {
         }
     }
 
-    public void analyzeLogs(String path) {
+    public void analyzeLogs(String path, LocalDateTime from, LocalDateTime to) {
         mostResources = new HashMap<>();
         mostCodeResponses = new HashMap<>();
+        List<Integer> responseSizes = new ArrayList<>();
 
         if (!(path.startsWith("http://") || path.startsWith("https://"))) {
             Path filePath = Paths.get(path);
@@ -48,23 +55,35 @@ public class LogAnalyzer {
             String line;
             while ((line = reader.readLine()) != null) {
                 Log log = parseLog(line);
-                requestCounter++;
-                mostResources = new HashMap<>();
-                mostCodeResponses = new HashMap<>();
-
-                mostResources.put(log.getResource(), mostResources.getOrDefault(log.getResource(), 0) + 1);
-                mostCodeResponses.put(
-                    String.valueOf(log.getResponseCode()),
-                    mostCodeResponses.getOrDefault(log.getResponseCode(), 0) + 1);
-                averageSize+=log.getResponseSize();
+                if (isWithinTimeRange(log.getDateTime(), from, to)) {
+                    requestCounter++;
+                    mostResources.put(log.getResource(), mostResources.getOrDefault(log.getResource(), 0) + 1);
+                    mostCodeResponses.put(
+                        String.valueOf(log.getResponseCode()),
+                        mostCodeResponses.getOrDefault(log.getResponseCode(), 0) + 1);
+                    averageSize += log.getResponseSize();
+                    responseSizes.add(log.getResponseSize());
+                }
             }
-            averageSize=averageSize/requestCounter;
+            Collections.sort(responseSizes);
+            int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
+            percentile95 = responseSizes.get(percentile95index);
+            averageSize = averageSize / requestCounter;
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+    }
 
+    private static boolean isWithinTimeRange(LocalDateTime dateTime, LocalDateTime from, LocalDateTime to) {
+        if (from != null && dateTime.isBefore(from)) {
+            return false;
+        }
+        if (to != null && dateTime.isAfter(to)) {
+            return false;
+        }
+        return true;
     }
 
     private static Log parseLog(String line) {

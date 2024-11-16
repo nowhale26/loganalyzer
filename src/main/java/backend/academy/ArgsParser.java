@@ -7,7 +7,7 @@ import java.util.Map;
 public class ArgsParser {
     private LocalDateTime from;
     private LocalDateTime to;
-    private String logfile;
+    private String path;
     private String format;
     private Map<String, String> arguments;
 
@@ -23,7 +23,7 @@ public class ArgsParser {
         from = arguments.containsKey("from") ? LocalDateTime.parse(arguments.get("from")) : null;
         to = arguments.containsKey("to") ? LocalDateTime.parse(arguments.get("to")) : null;
         if (arguments.containsKey("path")) {
-            logfile = arguments.get("path");
+            path = arguments.get("path");
         } else {
             System.err.println("Не указан обязательный параметр --path");
         }
