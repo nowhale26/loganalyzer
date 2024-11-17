@@ -41,7 +41,7 @@ public class LogAnalyzerTest {
         assertThat(logAnalyzer.getPercentile95()).isEqualTo(3316);
         assertThat(logAnalyzer.getMaxSizeResponse()).isEqualTo(3316);
         assertThat(logAnalyzer.getMinSizeResponse()).isEqualTo(0);
-   }
+    }
 
     @Test
     public void testParseLogTo() {

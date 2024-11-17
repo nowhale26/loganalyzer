@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,34 +16,51 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-
 public class LogFileReader {
 
     public Stream<BufferedReader> getFiles(String pathPattern) {
-        try {
-            if (pathPattern.startsWith("http://") || pathPattern.startsWith("https://")) {
-                List<BufferedReader> readers = new ArrayList<>();
+
+        if (pathPattern.startsWith("http://") || pathPattern.startsWith("https://")) {
+            try {
                 BufferedReader reader = createReader(pathPattern);
-                readers.add(reader);
-                return readers.stream();
+                return Stream.of(reader);
+            } catch (IOException e) {
+                throw new AnalyzerException(e);
+            }
+        } else {
+            String separator = FileSystems.getDefault().getSeparator();
+            String normalizedPathPattern = pathPattern.replace("\\", separator).replace("/", separator);
+
+            int lastSeparatorIndex = normalizedPathPattern.lastIndexOf(separator);
+            String dirPath;
+            String globPattern;
+            if (lastSeparatorIndex >= 0) {
+                dirPath = normalizedPathPattern.substring(0, lastSeparatorIndex);
+                globPattern = normalizedPathPattern.substring(lastSeparatorIndex + 1);
             } else {
-                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pathPattern);
-                Path startPath = Paths.get(pathPattern).getParent();
-                if (startPath == null) {
-                    startPath = Paths.get(".");
-                }
-                return Files.walk(startPath)
-                    .filter(path -> matcher.matches(path))
-                    .map(path -> {
+                dirPath = ".";
+                globPattern = normalizedPathPattern;
+            }
+
+            Path dir = Paths.get(dirPath);
+            String glob = globPattern;
+
+            List<BufferedReader> readers = new ArrayList<>();
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, glob)) {
+                for (Path entry : stream) {
+                    if (Files.isRegularFile(entry)) {
                         try {
-                            return Files.newBufferedReader(path, StandardCharsets.UTF_8);
+                            BufferedReader reader = Files.newBufferedReader(entry, StandardCharsets.UTF_8);
+                            readers.add(reader);
                         } catch (IOException e) {
                             throw new AnalyzerException(e);
                         }
-                    });
+                    }
+                }
+            } catch (IOException e) {
+                throw new AnalyzerException(e);
             }
-        } catch (IOException e) {
-            throw new AnalyzerException(e);
+            return readers.stream();
         }
     }
 
@@ -51,3 +69,4 @@ public class LogFileReader {
         return new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8));
     }
 }
+

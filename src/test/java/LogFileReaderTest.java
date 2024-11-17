@@ -29,14 +29,14 @@ public class LogFileReaderTest {
         }
     }
 
-//    @Test
-//    public void testLocalFiles() {
-//        LogFileReader logFileReader = new LogFileReader();
-//        try (Stream<BufferedReader> files = logFileReader.getFiles("logs/*")) {
-//            assertThat(files).isNotEmpty().allSatisfy(item -> {
-//                    assertThat(item.readLine()).isNotEmpty();
-//                }
-//            );
-//        }
-//    }
+    @Test
+    public void testLocalFiles() {
+        LogFileReader logFileReader = new LogFileReader();
+        try (Stream<BufferedReader> files = logFileReader.getFiles("logs/*")) {
+            assertThat(files).isNotEmpty().allSatisfy(item -> {
+                    assertThat(item.readLine()).isNotEmpty();
+                }
+            );
+        }
+    }
 }
