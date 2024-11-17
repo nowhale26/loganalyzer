@@ -44,7 +44,7 @@ public class MarkdownTextReport extends TextReport {
         mostResources.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(3)
             .forEach(entry -> report.append("| ").append(entry.getKey())
                 .append(" | ").append(entry.getValue()).append(" |\n"));
-        report.append("\n## Наиболее часто встречающиеся коды ответа\n\n");
+        report.append("\n#### Наиболее часто встречающиеся коды ответа\n\n");
         report.append("| Код ответа | Количество |\n");
         report.append("|------------|------------|\n");
         mostCodeResponses.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(3)
