@@ -22,9 +22,8 @@ public class AdocTextReport extends TextReport {
     }
 
     @Override
-    public void generateReport() {
+    public String buildReport(String name) {
         StringBuilder report = new StringBuilder();
-        String name = extractFileName(path);
         report.append("= Общая информация\n\n");
         report.append("== Имя файла\n\n").append(name).append("\n\n");
         report.append("== Начальная дата\n\n").append(from == null ? "-" : from.toString()).append("\n\n");
@@ -53,7 +52,14 @@ public class AdocTextReport extends TextReport {
                 .append("\n| ").append(entry.getValue()).append("\n"));
         report.append("|===\n");
 
+        return report.toString();
+    }
+
+    @Override
+    public void generateReport() {
+        String name = extractFileName(path);
+        String reportResult = buildReport(name);
         String filename = "report_" + name + ".adoc";
-        writeReportToFile(report.toString(), filename);
+        writeReportToFile(reportResult, filename);
     }
 }

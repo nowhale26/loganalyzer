@@ -1,5 +1,7 @@
 package backend.academy.textreports;
 
+import lombok.Getter;
+import lombok.Setter;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -7,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TextReport {
+public abstract class TextReport {
     protected final int requestCounter;
     protected final Map<String, Integer> mostResources;
     protected final Map<String, Integer> mostCodeResponses;
@@ -43,8 +45,9 @@ public class TextReport {
         this.minSizeResponse = minSizeResponse;
     }
 
-    public void generateReport() {
-    }
+    public abstract String buildReport(String name);
+
+    public abstract void generateReport();
 
     protected static void writeReportToFile(String reportContent, String fileName) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
@@ -60,5 +63,4 @@ public class TextReport {
         int lastSeparatorIndex = path.lastIndexOf('/');
         return path.substring(lastSeparatorIndex + 1);
     }
-
 }

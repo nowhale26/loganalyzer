@@ -7,6 +7,7 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class Analyzer {
+
     public static void main(String[] args) {
         ArgsParser argsParser = new ArgsParser();
         argsParser.initializeArguments(args);

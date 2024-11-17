@@ -2,17 +2,11 @@ package backend.academy;
 
 import lombok.Getter;
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,11 +29,6 @@ public class LogAnalyzer {
     private int maxSizeResponse = -1;
     private int minSizeResponse = -1;
 
-    private static BufferedReader createReader(String path) throws IOException {
-        URL url = URI.create(path).toURL();
-        return new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8));
-    }
-
     public void analyzeLogs(
         String pathPattern,
         LocalDateTime from,
@@ -51,30 +40,9 @@ public class LogAnalyzer {
         mostCodeResponses = new HashMap<>();
         List<Integer> responseSizes = new ArrayList<>();
 
-        List<BufferedReader> readers = new ArrayList<>();
-
-        try {
-            if (pathPattern.startsWith("http://") || pathPattern.startsWith("https://")) {
-                BufferedReader reader = createReader(pathPattern);
-                readers.add(reader);
-            } else {
-                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pathPattern);
-                Path startPath = Paths.get(pathPattern).getParent();
-                if (startPath == null) {
-                    startPath = Paths.get(".");
-                }
-                Files.walk(startPath)
-                    .filter(path -> matcher.matches(path))
-                    .forEach(path -> {
-                        try {
-                            readers.add(Files.newBufferedReader(path, StandardCharsets.UTF_8));
-                        } catch (IOException e) {
-                            System.err.println("Ошибка при открытии файла: " + path);
-                        }
-                    });
-            }
-
-            for (BufferedReader reader : readers) {
+        LogFileReader logFileReader = new LogFileReader();
+        logFileReader.getFiles(pathPattern).forEach(reader -> {
+            try {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     Log log = parseLog(line);
@@ -106,22 +74,20 @@ public class LogAnalyzer {
                     responseSizes.add(log.getResponseSize());
                 }
                 reader.close();
+            } catch (IOException e) {
+                throw new AnalyzerException(e);
             }
+        });
 
-            if (!responseSizes.isEmpty() && requestCounter > 0) {
-                Collections.sort(responseSizes);
-                int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
-                percentile95 = responseSizes.get(percentile95index);
-                averageSize = averageSize / requestCounter;
-            } else {
-                percentile95 = 0;
-                averageSize = 0;
-            }
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (!responseSizes.isEmpty() && requestCounter > 0) {
+            Collections.sort(responseSizes);
+            int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
+            percentile95 = responseSizes.get(percentile95index);
+            averageSize = averageSize / requestCounter;
+        } else {
+            percentile95 = 0;
+            averageSize = 0;
         }
-
     }
 
     private static boolean isWithinTimeRange(LocalDateTime dateTime, LocalDateTime from, LocalDateTime to) {

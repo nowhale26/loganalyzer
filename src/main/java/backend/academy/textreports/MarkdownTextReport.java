@@ -21,9 +21,8 @@ public class MarkdownTextReport extends TextReport {
     }
 
     @Override
-    public void generateReport() {
+    public String buildReport(String name) {
         StringBuilder report = new StringBuilder();
-        String name = extractFileName(path);
         report.append("#### Общая информация\n");
         report.append("\n\n");
         report.append("| Метрика | Значение |\n");
@@ -51,7 +50,14 @@ public class MarkdownTextReport extends TextReport {
             .forEach(entry -> report.append("| ").append(entry.getKey()).append(" | ").append(entry.getValue())
                 .append(" |\n"));
 
+        return report.toString();
+    }
+
+    @Override
+    public void generateReport() {
+        String name = extractFileName(path);
+        String reportResult = buildReport(name);
         String filename = "report_" + name + ".md";
-        writeReportToFile(report.toString(), filename);
+        writeReportToFile(reportResult, filename);
     }
 }
