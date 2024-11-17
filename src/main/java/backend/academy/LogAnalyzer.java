@@ -27,8 +27,10 @@ public class LogAnalyzer {
     private int requestCounter = 0;
     private Map<String, Integer> mostResources;
     private Map<String, Integer> mostCodeResponses;
-    private double averageSize = 0;
+    private long averageSize = 0;
     private int percentile95;
+    private int maxSizeResponse = -1;
+    private int minSizeResponse = -1;
 
     private static BufferedReader createReader(String path) throws IOException {
         if (path.startsWith("https://") || path.startsWith("http://")) {
@@ -55,15 +57,23 @@ public class LogAnalyzer {
             String line;
             while ((line = reader.readLine()) != null) {
                 Log log = parseLog(line);
-                if (isWithinTimeRange(log.getDateTime(), from, to)) {
-                    requestCounter++;
-                    mostResources.put(log.getResource(), mostResources.getOrDefault(log.getResource(), 0) + 1);
-                    mostCodeResponses.put(
-                        String.valueOf(log.getResponseCode()),
-                        mostCodeResponses.getOrDefault(log.getResponseCode(), 0) + 1);
-                    averageSize += log.getResponseSize();
-                    responseSizes.add(log.getResponseSize());
+                if(isWithinTimeRange(log.getDateTime(), from, to)) continue;
+
+
+                requestCounter++;
+                mostResources.put(log.getResource(), mostResources.getOrDefault(log.getResource(), 0) + 1);
+                mostCodeResponses.put(
+                    String.valueOf(log.getResponseCode()),
+                    mostCodeResponses.getOrDefault(log.getResponseCode(), 0) + 1);
+                averageSize += log.getResponseSize();
+                maxSizeResponse = Math.max(log.getResponseSize(), maxSizeResponse);
+                if (minSizeResponse == -1) {
+                    minSizeResponse = log.getResponseSize();
+                } else {
+                    minSizeResponse = Math.min(log.getResponseSize(), minSizeResponse);
                 }
+                responseSizes.add(log.getResponseSize());
+
             }
             Collections.sort(responseSizes);
             int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
