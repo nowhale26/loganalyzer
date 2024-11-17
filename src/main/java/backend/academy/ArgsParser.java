@@ -1,10 +1,11 @@
 package backend.academy;
 
-import lombok.Getter;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.Getter;
 
 @Getter
 public class ArgsParser {
@@ -16,6 +17,7 @@ public class ArgsParser {
     private String filterValue;
     private Map<String, String> arguments;
 
+    @SuppressFBWarnings("PSC_PRESIZE_COLLECTIONS")
     private Map<String, String> parseArguments(String[] args) {
         Map<String, String> argsMap = new HashMap<>();
 
@@ -25,13 +27,16 @@ public class ArgsParser {
         return argsMap;
     }
 
+    @SuppressFBWarnings("MUI_CONTAINSKEY_BEFORE_GET")
     public void initializeArguments(String[] args) {
         arguments = new HashMap<>(parseArguments(args));
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-        from = arguments.containsKey("from") ? LocalDateTime.parse(arguments.get("from"), formatter) : null;
-        to = arguments.containsKey("to") ? LocalDateTime.parse(arguments.get("to"),formatter) : null;
-        if (arguments.containsKey("path")) {
-            path = arguments.get("path");
+        String fromValue = arguments.get(Constants.FROM);
+        from = (fromValue != null) ? LocalDateTime.parse(fromValue, formatter) : null;
+        String toValue = arguments.get("to");
+        to = (toValue != null) ? LocalDateTime.parse(toValue, formatter) : null;
+        if (arguments.containsKey(Constants.PATH)) {
+            path = arguments.get(Constants.PATH);
         } else {
             System.err.println("Не указан обязательный параметр --path");
         }

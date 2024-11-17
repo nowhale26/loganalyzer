@@ -2,7 +2,6 @@ package backend.academy;
 
 public class AnalyzerException extends RuntimeException {
     public AnalyzerException() {
-        super();
     }
 
     public AnalyzerException(String message) {

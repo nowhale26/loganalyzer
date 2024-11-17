@@ -1,12 +1,6 @@
 package backend.academy;
 
-import lombok.Getter;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.Getter;
 
 @Getter
 public class LogAnalyzer {
@@ -81,7 +76,7 @@ public class LogAnalyzer {
 
         if (!responseSizes.isEmpty() && requestCounter > 0) {
             Collections.sort(responseSizes);
-            int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
+            int percentile95index = (int) Math.ceil(Constants.PERCENTILE * responseSizes.size()) - 1;
             percentile95 = responseSizes.get(percentile95index);
             averageSize = averageSize / requestCounter;
         } else {
@@ -100,6 +95,7 @@ public class LogAnalyzer {
         return true;
     }
 
+    @SuppressWarnings("MagicNumber")
     private static Log parseLog(String line) {
         String regex = "^(\\S+) \\S+ \\S+ \\[(.*?)\\] \"(\\S+) (\\S+) \\S+\" (\\d{3}) (\\d+|-) \"(.*?)\" \"(.*?)\"";
         Pattern pattern = Pattern.compile(regex);
@@ -114,7 +110,7 @@ public class LogAnalyzer {
         String resource = matcher.group(4);
         int responseCode = Integer.parseInt(matcher.group(5));
         String sizeStr = matcher.group(6);
-        int responseSize = sizeStr.equals("-") ? 0 : Integer.parseInt(sizeStr);
+        int responseSize = "-".equals(sizeStr) ? 0 : Integer.parseInt(sizeStr);
         String agent = matcher.group(8);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);

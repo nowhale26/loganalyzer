@@ -1,7 +1,7 @@
 package backend.academy;
 
-import lombok.Getter;
 import java.time.LocalDateTime;
+import lombok.Getter;
 
 @Getter
 public class Log {
@@ -28,6 +28,6 @@ public class Log {
         this.resource = resource;
         this.ip = ip;
         this.method = method;
-        this.agent=agent;
+        this.agent = agent;
     }
 }

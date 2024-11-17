@@ -1,10 +1,12 @@
 package backend.academy.textreports;
 
+import backend.academy.Constants;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDateTime;
 import java.util.Map;
 
 public class AdocTextReport extends TextReport {
-
+    @SuppressWarnings("ParameterNumber")
     public AdocTextReport(
         int requestCounter,
         Map<String, Integer> mostResources,
@@ -22,6 +24,7 @@ public class AdocTextReport extends TextReport {
     }
 
     @Override
+    @SuppressWarnings("MultipleStringLiterals")
     public String buildReport(String name) {
         StringBuilder report = new StringBuilder();
         report.append("= Общая информация\n\n");
@@ -38,24 +41,31 @@ public class AdocTextReport extends TextReport {
         report.append("[cols=\"2,1\", options=\"header\"]\n|===\n| Ресурс | Количество запросов\n");
         mostResources.entrySet().stream()
             .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-            .limit(3)
-            .forEach(entry -> report.append("| ").append(entry.getKey())
-                .append("\n| ").append(entry.getValue()).append("\n"));
+            .limit(Constants.NUMBEROFSTATS)
+            .forEach(entry -> report.append('|').append(' ')
+                .append(entry.getKey())
+                .append('\n').append('|').append(' ')
+                .append(entry.getValue())
+                .append('\n'));
         report.append("|===\n");
 
         report.append("\n== Наиболее часто встречающиеся коды ответа\n\n");
         report.append("[cols=\"1,1\", options=\"header\"]\n|===\n| Код ответа | Количество\n");
         mostCodeResponses.entrySet().stream()
             .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-            .limit(3)
-            .forEach(entry -> report.append("| ").append(entry.getKey())
-                .append("\n| ").append(entry.getValue()).append("\n"));
+            .limit(Constants.NUMBEROFSTATS)
+            .forEach(entry -> report.append('|').append(' ')
+                .append(entry.getKey())
+                .append('\n').append('|').append(' ')
+                .append(entry.getValue())
+                .append('\n'));
         report.append("|===\n");
 
         return report.toString();
     }
 
     @Override
+    @SuppressFBWarnings("URLCONNECTION_SSRF_FD")
     public void generateReport() {
         String name = extractFileName(path);
         String reportResult = buildReport(name);

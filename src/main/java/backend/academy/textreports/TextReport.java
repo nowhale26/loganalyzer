@@ -1,10 +1,10 @@
 package backend.academy.textreports;
 
-import lombok.Getter;
-import lombok.Setter;
 import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +21,7 @@ public abstract class TextReport {
     protected final int maxSizeResponse;
     protected final int minSizeResponse;
 
+    @SuppressWarnings("ParameterNumber")
     public TextReport(
         int requestCounter,
         Map<String, Integer> mostResources,
@@ -49,13 +50,14 @@ public abstract class TextReport {
 
     public abstract void generateReport();
 
+    @SuppressWarnings({"RegexpSinglelineJava"})
     protected static void writeReportToFile(String reportContent, String fileName) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+        try (BufferedWriter writer = Files.newBufferedWriter(
+            Path.of(fileName), StandardCharsets.UTF_8)) {
             writer.write(reportContent);
             System.out.println("Отчет успешно сохранен в файл: " + fileName);
         } catch (IOException e) {
             System.err.println("Ошибка при записи отчета в файл: " + fileName);
-            e.printStackTrace();
         }
     }
 

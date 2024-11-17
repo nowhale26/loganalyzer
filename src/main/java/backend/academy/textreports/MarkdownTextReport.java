@@ -1,9 +1,12 @@
 package backend.academy.textreports;
 
+import backend.academy.Constants;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.time.LocalDateTime;
 import java.util.Map;
 
 public class MarkdownTextReport extends TextReport {
+    @SuppressWarnings("ParameterNumber")
     public MarkdownTextReport(
         int requestCounter,
         Map<String, Integer> mostResources,
@@ -21,6 +24,8 @@ public class MarkdownTextReport extends TextReport {
     }
 
     @Override
+    @SuppressWarnings("MultipleStringLiterals")
+    @SuppressFBWarnings("UCPM_USE_CHARACTER_PARAMETERIZED_METHOD")
     public String buildReport(String name) {
         StringBuilder report = new StringBuilder();
         report.append("#### Общая информация\n");
@@ -40,13 +45,15 @@ public class MarkdownTextReport extends TextReport {
         report.append("\n");
         report.append("| Ресурс | Количество |\n");
         report.append("|--------|------------|\n");
-        mostResources.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(3)
+        mostResources.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .limit(Constants.NUMBEROFSTATS)
             .forEach(entry -> report.append("| ").append(entry.getKey())
                 .append(" | ").append(entry.getValue()).append(" |\n"));
         report.append("\n#### Наиболее часто встречающиеся коды ответа\n\n");
         report.append("| Код ответа | Количество |\n");
         report.append("|------------|------------|\n");
-        mostCodeResponses.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed()).limit(3)
+        mostCodeResponses.entrySet().stream().sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+            .limit(Constants.NUMBEROFSTATS)
             .forEach(entry -> report.append("| ").append(entry.getKey()).append(" | ").append(entry.getValue())
                 .append(" |\n"));
 
