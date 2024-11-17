@@ -7,8 +7,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -33,52 +36,87 @@ public class LogAnalyzer {
     private int minSizeResponse = -1;
 
     private static BufferedReader createReader(String path) throws IOException {
-        if (path.startsWith("https://") || path.startsWith("http://")) {
-            URL url = URI.create(path).toURL();
-            return new BufferedReader(new InputStreamReader(url.openStream()));
-        } else {
-            return new BufferedReader(new FileReader(path));
-        }
+        URL url = URI.create(path).toURL();
+        return new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8));
     }
 
-    public void analyzeLogs(String path, LocalDateTime from, LocalDateTime to) {
+    public void analyzeLogs(
+        String pathPattern,
+        LocalDateTime from,
+        LocalDateTime to,
+        String filterField,
+        String filterValue
+    ) {
         mostResources = new HashMap<>();
         mostCodeResponses = new HashMap<>();
         List<Integer> responseSizes = new ArrayList<>();
 
-        if (!(path.startsWith("http://") || path.startsWith("https://"))) {
-            Path filePath = Paths.get(path);
-            if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
-                System.err.println("Файл не найден: " + path);
-                return;
-            }
-        }
-        try (BufferedReader reader = createReader(path)) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                Log log = parseLog(line);
-                if(isWithinTimeRange(log.getDateTime(), from, to)) continue;
+        List<BufferedReader> readers = new ArrayList<>();
 
-
-                requestCounter++;
-                mostResources.put(log.getResource(), mostResources.getOrDefault(log.getResource(), 0) + 1);
-                mostCodeResponses.put(
-                    String.valueOf(log.getResponseCode()),
-                    mostCodeResponses.getOrDefault(log.getResponseCode(), 0) + 1);
-                averageSize += log.getResponseSize();
-                maxSizeResponse = Math.max(log.getResponseSize(), maxSizeResponse);
-                if (minSizeResponse == -1) {
-                    minSizeResponse = log.getResponseSize();
-                } else {
-                    minSizeResponse = Math.min(log.getResponseSize(), minSizeResponse);
+        try {
+            if (pathPattern.startsWith("http://") || pathPattern.startsWith("https://")) {
+                BufferedReader reader = createReader(pathPattern);
+                readers.add(reader);
+            } else {
+                PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pathPattern);
+                Path startPath = Paths.get(pathPattern).getParent();
+                if (startPath == null) {
+                    startPath = Paths.get(".");
                 }
-                responseSizes.add(log.getResponseSize());
-
+                Files.walk(startPath)
+                    .filter(path -> matcher.matches(path))
+                    .forEach(path -> {
+                        try {
+                            readers.add(Files.newBufferedReader(path, StandardCharsets.UTF_8));
+                        } catch (IOException e) {
+                            System.err.println("Ошибка при открытии файла: " + path);
+                        }
+                    });
             }
-            Collections.sort(responseSizes);
-            int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
-            percentile95 = responseSizes.get(percentile95index);
-            averageSize = averageSize / requestCounter;
+
+            for (BufferedReader reader : readers) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    Log log = parseLog(line);
+
+                    if (log == null) {
+                        continue;
+                    }
+
+                    if (!isWithinTimeRange(log.getDateTime(), from, to)) {
+                        continue;
+                    }
+
+                    if (!matchesFilter(log, filterField, filterValue)) {
+                        continue;
+                    }
+
+                    requestCounter++;
+                    mostResources.put(log.getResource(), mostResources.getOrDefault(log.getResource(), 0) + 1);
+                    mostCodeResponses.put(
+                        String.valueOf(log.getResponseCode()),
+                        mostCodeResponses.getOrDefault(String.valueOf(log.getResponseCode()), 0) + 1);
+                    averageSize += log.getResponseSize();
+                    maxSizeResponse = Math.max(log.getResponseSize(), maxSizeResponse);
+                    if (minSizeResponse == -1) {
+                        minSizeResponse = log.getResponseSize();
+                    } else {
+                        minSizeResponse = Math.min(log.getResponseSize(), minSizeResponse);
+                    }
+                    responseSizes.add(log.getResponseSize());
+                }
+                reader.close();
+            }
+
+            if (!responseSizes.isEmpty() && requestCounter > 0) {
+                Collections.sort(responseSizes);
+                int percentile95index = (int) Math.ceil(0.95 * responseSizes.size()) - 1;
+                percentile95 = responseSizes.get(percentile95index);
+                averageSize = averageSize / requestCounter;
+            } else {
+                percentile95 = 0;
+                averageSize = 0;
+            }
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -97,7 +135,7 @@ public class LogAnalyzer {
     }
 
     private static Log parseLog(String line) {
-        String regex = "^(\\S+) \\S+ \\S+ \\[(.*?)\\] \"(\\S+) (\\S+) \\S+\" (\\d{3}) (\\d+|-)";
+        String regex = "^(\\S+) \\S+ \\S+ \\[(.*?)\\] \"(\\S+) (\\S+) \\S+\" (\\d{3}) (\\d+|-) \"(.*?)\" \"(.*?)\"";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(line);
 
@@ -109,12 +147,50 @@ public class LogAnalyzer {
         String method = matcher.group(3);
         String resource = matcher.group(4);
         int responseCode = Integer.parseInt(matcher.group(5));
-        int responseSize = Integer.parseInt(matcher.group(6));
+        String sizeStr = matcher.group(6);
+        int responseSize = sizeStr.equals("-") ? 0 : Integer.parseInt(sizeStr);
+        String agent = matcher.group(8);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MMM/yyyy:HH:mm:ss Z", Locale.ENGLISH);
         ZonedDateTime zonedDateTime = ZonedDateTime.parse(dateTimeStr, formatter);
         LocalDateTime dateTime = zonedDateTime.toLocalDateTime();
 
-        return new Log(dateTime, responseCode, responseSize, resource, ip, method);
+        return new Log(dateTime, responseCode, responseSize, resource, ip, method, agent);
+    }
+
+    private boolean matchesFilter(Log log, String filterField, String filterValue) {
+        if (filterField == null || filterValue == null) {
+            return true;
+        }
+
+        String fieldValue = null;
+        switch (filterField.toLowerCase()) {
+            case "agent":
+                fieldValue = log.getAgent();
+                break;
+            case "method":
+                fieldValue = log.getMethod();
+                break;
+            case "ip":
+                fieldValue = log.getIp();
+                break;
+            case "resource":
+                fieldValue = log.getResource();
+                break;
+            case "status":
+            case "code":
+                fieldValue = String.valueOf(log.getResponseCode());
+                break;
+            default:
+                System.err.println("Неизвестное поле фильтрации: " + filterField);
+                return false;
+        }
+
+        if (fieldValue == null) {
+            return false;
+        }
+
+        String regexPattern = filterValue.replace("*", ".*");
+        return fieldValue.matches(regexPattern);
     }
 }

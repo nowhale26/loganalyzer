@@ -30,10 +30,10 @@ public class AdocTextReport extends TextReport {
         report.append("== Начальная дата\n\n").append(from == null ? "-" : from.toString()).append("\n\n");
         report.append("== Конечная дата\n\n").append(to == null ? "-" : to.toString()).append("\n\n");
         report.append("== Общее количество запросов\n\n").append(requestCounter).append("\n\n");
-        report.append("== Средний размер ответа\n\n").append(averageSize).append("\n\n");
-        report.append("== 95p размер ответа\n\n").append(percentile95).append("\n\n");
-        report.append("== Наибольший размер ответа\n\n").append(maxSizeResponse).append("\n\n");
-        report.append("== Наименьший размер ответа\n\n").append(minSizeResponse).append("\n\n");
+        report.append("== Средний размер ответа\n\n").append(averageSize).append("b\n\n");
+        report.append("== 95p размер ответа\n\n").append(percentile95).append("b\n\n");
+        report.append("== Наибольший размер ответа\n\n").append(maxSizeResponse).append("b\n\n");
+        report.append("== Наименьший размер ответа\n\n").append(minSizeResponse).append("b\n\n");
 
         report.append("== Наиболее часто запрашиваемые ресурсы\n\n");
         report.append("[cols=\"2,1\", options=\"header\"]\n|===\n| Ресурс | Количество запросов\n");
@@ -54,6 +54,6 @@ public class AdocTextReport extends TextReport {
         report.append("|===\n");
 
         String filename = "report_" + name + ".adoc";
-        writeReportToFile(report.toString(), name);
+        writeReportToFile(report.toString(), filename);
     }
 }

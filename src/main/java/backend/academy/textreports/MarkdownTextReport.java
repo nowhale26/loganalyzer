@@ -27,9 +27,10 @@ public class MarkdownTextReport extends TextReport {
         report.append("#### Общая информация\n");
         report.append("\n\n");
         report.append("| Метрика | Значение |\n");
+        report.append("|--------|------------|\n");
         report.append("| Файл | " + name + " |\n");
-        report.append("| Начальная дата | " + from == null ? "- |\n" : from.toString() + " |\n");
-        report.append("| Конечная дата | " + to == null ? "- |\n" : to.toString() + " |\n");
+        report.append("| Начальная дата | ").append(from == null ? "- |\n" : from + " |\n");
+        report.append("| Конечная дата | ").append(to == null ? "- |\n" : to + " |\n");
         report.append("| Количество запросов | " + requestCounter + " |\n");
         report.append("| Средний размер ответа | " + averageSize + "b |\n");
         report.append("| Наибольший размер ответа | " + maxSizeResponse + "b |\n");
